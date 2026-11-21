@@ -1,0 +1,21 @@
+{
+  "titulo": "Mi presentación",
+  "salida": "../Mi-Presentacion.html",
+  "tema": {
+    "ground": "#0d0d0f",
+    "ink": "#f2f0ec",
+    "muted": "#7c7c83",
+    "accent": "#ff2d2d",
+    "panel": "#17171a",
+    "bar": "#b31217",
+    "line": "#2a2a30",
+    "dim": "#3a3a40",
+    "display": "\"Bebas Neue\", Impact, \"Arial Narrow\", sans-serif",
+    "body": "\"Bahnschrift\", \"Segoe UI\", Arial, sans-serif",
+    "mono": "Consolas, \"Cascadia Mono\", \"Courier New\", monospace"
+  },
+  "fuentes": [
+    { "familia": "Bebas Neue", "archivo": "BebasNeue-400.woff2", "peso": "400" },
+    { "familia": "Bahnschrift", "archivo": "Bahnschrift.ttf", "peso": "300 700", "local": "Bahnschrift" }
+  ]
+}

@@ -1,0 +1,5 @@
+# Fuente de Microsoft: viene con Windows 10 y 11 y no se redistribuye; build.py la toma del sistema
+assets/fonts/Bahnschrift.ttf
+__pycache__/
+*.pyc
+*.parcial

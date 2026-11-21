@@ -1,0 +1,637 @@
+<style>
+/* ===== red: de la central a la casa, con pulsos de energía por los cables ===== */
+#red .titulo { position: absolute; left: 140px; top: 136px; white-space: nowrap; }
+#red .lamina { position: absolute; left: 120px; top: 320px; overflow: visible; }
+#red .ln { fill: none; stroke: var(--ink); stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+#red .ld { fill: none; stroke: var(--dim); stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+#red .pn { fill: var(--panel); }
+#red .rot { position: absolute; color: var(--muted); }
+#red .r-central { left: 140px; top: 404px; }
+#red .r-sub { left: 1300px; top: 384px; }
+#red .r-poste { left: 1556px; top: 460px; }
+#red .r-casa { left: 1682px; top: 570px; }
+#red .punto { position: absolute; top: 834px; margin: 0; }
+#red .p1 { left: 140px; width: 440px; }
+#red .p2 { left: 640px; width: 600px; }
+#red .p3 { left: 1286px; width: 506px; }
+
+/* Piezas del diagrama: se arman de izquierda a derecha; torres y poste crecen desde el suelo */
+#red .pieza { transform-box: fill-box; transform-origin: 50% 100%; }
+#red.is-active .pieza { animation: red-sube .7s var(--out) var(--d, 0s) both; }
+#red.is-active .torre, #red.is-active .poste { animation-name: red-crece; }
+/* Trazos que se dibujan: pathLength="1" permite usar el mismo dash para cualquier largo */
+#red .traza { stroke-dasharray: 1; }
+#red.is-active .suelo { animation: red-traza .8s var(--ease) .05s both; }
+#red.is-active .tierra { animation: red-traza 1s var(--ease) .9s both; }
+#red.is-active .cable { animation: red-traza 1.2s var(--ease) .8s both; }
+#red.is-active .cota { animation: red-traza .6s var(--ease) var(--d, 0s) both; }
+
+/* Loop: vapor de la torre de enfriamiento y rotor de la turbina */
+#red .vapor circle { stroke: var(--muted); transform-box: fill-box; transform-origin: 50% 50%; opacity: 0; }
+#red.is-active .vapor circle { animation: red-vapor 3.6s linear infinite; }
+#red.is-active .vapor circle:nth-child(2) { animation-delay: -1.2s; }
+#red.is-active .vapor circle:nth-child(3) { animation-delay: -2.4s; }
+#red .rotor { transform-box: fill-box; transform-origin: 50% 50%; }
+#red.is-active .rotor { animation: red-gira 2.4s linear infinite; }
+
+/* Energía: pulsos, bobinas que se activan al paso y ventana que se enciende */
+#red .pulso { fill: var(--accent); }
+#red .bobina { fill: none; stroke: var(--dim); stroke-width: 3; transition: stroke .35s ease; }
+#red .bobina.on { stroke: var(--accent); transition: none; }
+#red .ventana { fill: var(--panel); stroke: var(--ink); stroke-width: 3; transition: fill .5s ease; }
+#red.luz .ventana { fill: var(--accent); }
+
+@keyframes red-sube { from { opacity: 0; transform: translateY(26px); } to { opacity: 1; transform: none; } }
+@keyframes red-crece { from { opacity: 0; transform: scaleY(.15); } 35% { opacity: 1; } to { opacity: 1; transform: none; } }
+@keyframes red-traza { from { stroke-dashoffset: 1; } to { stroke-dashoffset: 0; } }
+@keyframes red-vapor {
+  0% { opacity: 0; transform: translate(0, 0) scale(.6); }
+  20% { opacity: 1; }
+  100% { opacity: 0; transform: translate(16px, -92px) scale(1.5); }
+}
+@keyframes red-gira { to { transform: rotate(360deg); } }
+
+/* ===== tension: el medidor baja de nivel en cada tramo de la red ===== */
+#tension .titulo { position: absolute; left: 140px; top: 140px; white-space: nowrap; }
+#tension .paso { position: absolute; right: 120px; top: 98px; }
+#tension .paso b { color: var(--ink); font-weight: 600; }
+#tension .lamina { position: absolute; left: 0; top: 0; }
+#tension .ln { fill: none; stroke: var(--ink); stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+#tension .ld { fill: none; stroke: var(--dim); stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+#tension .pn { fill: var(--panel); }
+
+/* Tramos: pendiente en --dim, recorrido en --muted, actual en --ink con flujo de acento */
+#tension .tr .ln { stroke: var(--dim); transition: stroke .45s ease; }
+#tension .tr.hecho .ln { stroke: var(--muted); }
+#tension .tr.activo .ln { stroke: var(--ink); }
+#tension .bobina { fill: none; stroke: var(--dim); stroke-width: 3; transition: stroke .45s ease; }
+#tension .tr.activo .bobina { stroke: var(--accent); }
+#tension .flujo { fill: none; stroke: var(--accent); stroke-width: 4; stroke-linecap: round; stroke-dasharray: 10 30; opacity: 0; transition: opacity .3s ease; }
+#tension .tr.activo .flujo { opacity: 1; transition-delay: .25s; }
+#tension.is-active .flujo { animation: tension-fluye .8s linear infinite; }
+#tension .foco { fill: var(--panel); stroke: var(--dim); stroke-width: 3; transition: fill .4s ease, stroke .4s ease; }
+#tension .tr4.activo .foco { fill: var(--accent); stroke: var(--accent); transition-delay: .5s; }
+
+/* Medidor: el relleno escala desde abajo y la punta con la guía de nivel se desplazan juntas */
+#tension .tubo { fill: var(--panel); stroke: var(--ink); stroke-width: 3; }
+#tension .relleno { fill: var(--accent); transform-box: fill-box; transform-origin: 50% 100%; transition: transform .7s var(--ease); }
+#tension .nivel { transition: transform .7s var(--ease); }
+#tension.entra .relleno, #tension.entra .nivel { transition-duration: 1.1s; transition-delay: .45s; }
+#tension .guia { fill: none; stroke: var(--muted); stroke-width: 2; stroke-dasharray: 6 10; }
+#tension .punta { fill: var(--accent); }
+#tension .nv { position: absolute; left: 110px; width: 140px; text-align: right; font: 400 52px/52px var(--display); letter-spacing: .03em; color: var(--muted); transition: color .4s ease; }
+#tension .nv.on { color: var(--ink); }
+#tension .nv-alta { top: 374px; }
+#tension .nv-media { top: 534px; }
+#tension .nv-baja { top: 674px; }
+#tension .med-tag { position: absolute; left: 250px; top: 286px; width: 140px; text-align: center; }
+#tension .tn { position: absolute; top: 866px; width: 320px; text-align: center; color: var(--muted); transition: color .4s ease; }
+#tension .tn.on { color: var(--ink); }
+#tension .tn1 { left: 490px; }
+#tension .tn2 { left: 880px; }
+#tension .tn3 { left: 1210px; }
+#tension .tn4 { left: 1530px; }
+
+/* Una línea por paso, siempre en el mismo lugar */
+#tension .cap { position: absolute; left: 140px; top: 918px; width: 1480px; height: 64px; }
+#tension .cp { position: absolute; left: 0; top: 0; white-space: nowrap; opacity: 0; transform: translateY(12px); transition: opacity .15s ease, transform .15s ease; }
+#tension .cp.on { opacity: 1; transform: none; transition: opacity .35s ease .1s, transform .45s var(--out) .1s; }
+
+#tension.is-active .arma { animation: tension-arma .6s var(--out) var(--d, 0s) both; }
+#tension.is-active .nivel-a { animation: tension-aparece .5s ease .3s both; }
+/* Estado aplicado de golpe al entrar o al volver desde la slide siguiente */
+#tension.now, #tension.now * { transition: none !important; }
+
+@keyframes tension-arma { from { opacity: 0; transform: translateY(22px); } to { opacity: 1; transform: none; } }
+@keyframes tension-aparece { from { opacity: 0; } to { opacity: 1; } }
+@keyframes tension-fluye { to { stroke-dashoffset: -40; } }
+
+/* ===== i-circuito: la corriente se reparte por las pistas de una placa ===== */
+#i-circuito .placa { position: absolute; left: 0; top: 0; }
+#i-circuito pattern circle { fill: var(--line); }
+#i-circuito .deco { fill: none; stroke: var(--line); stroke-width: 6; stroke-linecap: round; stroke-linejoin: round; }
+#i-circuito .pista { fill: none; stroke: var(--dim); stroke-width: 6; stroke-linecap: round; stroke-linejoin: round; }
+#i-circuito .corriente { fill: none; stroke: var(--accent); stroke-width: 6; stroke-linejoin: round; stroke-dasharray: 1 1; stroke-dashoffset: 1; visibility: hidden; }
+#i-circuito .via { fill: var(--ground); stroke: var(--dim); stroke-width: 4; }
+#i-circuito .via-on { fill: var(--ground); stroke: var(--accent); stroke-width: 4; }
+#i-circuito .pad { fill: var(--dim); }
+#i-circuito .pad-off { fill: var(--line); }
+#i-circuito .pad-on { fill: var(--accent); }
+#i-circuito .chip { fill: var(--panel); stroke: var(--ink); stroke-width: 3; }
+#i-circuito .muesca { fill: none; stroke: var(--dim); stroke-width: 3; }
+#i-circuito .led { fill: var(--ground); stroke: var(--dim); stroke-width: 3; }
+#i-circuito .led-on { fill: var(--accent); stroke: var(--accent); stroke-width: 3; }
+#i-circuito .fuente { fill: var(--accent); }
+#i-circuito .lq > * { opacity: 0; transition: opacity .18s ease; }
+#i-circuito .lq > .on { opacity: 1; }
+</style>
+
+<section class="slide" id="red">
+  <div class="kicker in-left">Energía</div>
+  <div class="h-l titulo in-up" style="--d:.05s">Cómo llega la <span class="accent">luz</span> a tu casa</div>
+
+  <div class="tag rot r-central fade" style="--d:.5s">CENTRAL</div>
+  <div class="tag rot r-sub fade" style="--d:.8s">SUBESTACIÓN</div>
+  <div class="tag rot r-poste fade" style="--d:.9s">POSTE</div>
+  <div class="tag rot r-casa fade" style="--d:1s">CASA</div>
+
+  <svg class="lamina" width="1680" height="510" viewBox="0 40 1680 510" aria-hidden="true">
+    <path class="ld traza suelo" pathLength="1" d="M0 500 H1680"/>
+    <path class="ld traza tierra" pathLength="1" d="M600 70 Q720 88 840 70 Q960 88 1080 70"/>
+
+    <!-- Central: torre de enfriamiento, sala de turbinas en corte y transformador elevador -->
+    <g class="pieza central" style="--d:.1s">
+      <g class="vapor">
+        <circle class="ld" cx="104" cy="252" r="15"/>
+        <circle class="ld" cx="94" cy="252" r="12"/>
+        <circle class="ld" cx="114" cy="252" r="13"/>
+      </g>
+      <path class="ln pn" d="M20 500 C58 420 70 340 52 270 H158 C140 340 152 420 190 500 Z"/>
+      <path class="ld" d="M50 421 H160 M61 344 H149"/>
+      <path class="ln pn" d="M290 349 V196 H310 V359"/>
+      <path class="ld" d="M290 216 H310"/>
+      <rect class="ln pn" x="206" y="372" width="124" height="128"/>
+      <path class="ln" d="M200 372 L268 338 L336 372"/>
+      <circle class="ld" cx="252" cy="446" r="32"/>
+      <g class="rotor">
+        <circle cx="252" cy="446" r="22" fill="none"/>
+        <path class="ln" d="M252 446 V424 M252 446 L271 457 M252 446 L233 457"/>
+      </g>
+      <path class="ln" d="M330 466 H352"/>
+      <rect class="ln pn" x="352" y="432" width="60" height="68" rx="4"/>
+      <g class="bobina" data-caja="a"><circle cx="376" cy="466" r="11"/><circle cx="388" cy="466" r="11"/></g>
+      <path class="ln" d="M392 432 V404"/>
+      <path class="ld" d="M386 412 H398 M386 418 H398 M386 424 H398"/>
+    </g>
+
+    <!-- Torres de alta tensión: el script dibuja la celosía -->
+    <g class="pieza torre" data-x="600" style="--d:.3s"></g>
+    <g class="pieza torre" data-x="840" style="--d:.42s"></g>
+    <g class="pieza torre" data-x="1080" style="--d:.54s"></g>
+
+    <!-- Subestación: pórtico de llegada, cerca y transformador reductor -->
+    <g class="pieza sub" style="--d:.66s">
+      <path class="ld" d="M1150 446 H1396 M1150 446 V500 M1172 446 V500 M1194 446 V500 M1216 446 V500 M1238 446 V500 M1260 446 V500 M1282 446 V500 M1304 446 V500 M1326 446 V500 M1348 446 V500 M1370 446 V500 M1392 446 V500"/>
+      <path class="ln" d="M1180 500 V150 M1320 500 V150 M1168 150 H1332"/>
+      <path class="ld" d="M1180 162 H1320 M1180 186 L1204 162 M1320 186 L1296 162"/>
+      <path class="ln" d="M1226 150 V176"/>
+      <path class="ld" d="M1220 158 H1232 M1220 164 H1232 M1220 170 H1232"/>
+      <path class="ld pn" d="M1204 412 H1218 V484 H1204 Z M1290 412 H1304 V484 H1290 Z"/>
+      <path class="ld" d="M1211 412 V484 M1297 412 V484"/>
+      <rect class="ln pn" x="1218" y="392" width="72" height="108" rx="4"/>
+      <g class="bobina" data-caja="b"><circle cx="1246" cy="446" r="14"/><circle cx="1262" cy="446" r="14"/></g>
+      <path class="ln" d="M1236 392 V352 M1272 392 V372"/>
+      <path class="ld" d="M1230 362 H1242 M1230 370 H1242 M1230 378 H1242 M1266 382 H1278"/>
+    </g>
+
+    <!-- Poste de distribución con su transformador -->
+    <g class="pieza poste" style="--d:.8s">
+      <path class="ln" d="M1470 500 V226 M1436 246 H1504 M1446 246 V232 M1494 246 V232 M1470 300 H1480 M1470 334 H1480"/>
+      <rect class="ln pn" x="1480" y="290" width="30" height="54" rx="6"/>
+      <g class="bobina" data-caja="c"><circle cx="1490" cy="317" r="7"/><circle cx="1500" cy="317" r="7"/></g>
+      <path class="ln" d="M1495 290 V276"/>
+    </g>
+
+    <!-- Casa -->
+    <g class="pieza casa" style="--d:.92s">
+      <rect class="ln pn" x="1540" y="404" width="120" height="96"/>
+      <path class="ln" d="M1528 404 L1600 336 L1672 404"/>
+      <rect class="ventana" x="1556" y="426" width="46" height="40"/>
+      <path class="ln" d="M1579 426 V466 M1556 446 H1602 M1622 500 V444 H1646 V500"/>
+      <circle class="ln pn" cx="1540" cy="424" r="4"/>
+    </g>
+
+    <!-- Cable continuo y pulsos: el script arma ambos con la misma ruta -->
+    <path class="ln traza cable" pathLength="1" d="M0 0"/>
+    <g class="pulsos"></g>
+
+    <!-- Cotas de plano que agrupan cada idea -->
+    <path class="ld traza cota" pathLength="1" style="--d:.5s" d="M20 528 H470 M20 516 V540 M470 516 V540 M13 535 L27 521 M463 535 L477 521"/>
+    <path class="ld traza cota" pathLength="1" style="--d:.6s" d="M520 528 H1140 M520 516 V540 M1140 516 V540 M513 535 L527 521 M1133 535 L1147 521"/>
+    <path class="ld traza cota" pathLength="1" style="--d:.7s" d="M1180 528 H1672 M1180 516 V540 M1672 516 V540 M1173 535 L1187 521 M1665 535 L1679 521"/>
+  </svg>
+
+  <p class="txt punto p1 in-up" style="--d:.5s">Se genera lejos.</p>
+  <p class="txt punto p2 in-up" style="--d:.6s">Viaja en alta tensión para perder menos.</p>
+  <p class="txt punto p3 in-up" style="--d:.7s">Se baja por etapas antes de entrar.</p>
+</section>
+
+<section class="slide" id="tension">
+  <div class="kicker in-left">Transformadores</div>
+  <div class="tag paso fade" style="--d:.3s">PASO <b>01</b> / 04</div>
+  <div class="h-m titulo in-up" style="--d:.05s">Bajar la tensión, paso a paso</div>
+
+  <div class="tag med-tag fade" style="--d:.2s">TENSIÓN</div>
+  <div class="nv nv-alta fade" style="--d:.25s">ALTA</div>
+  <div class="nv nv-media fade" style="--d:.3s">MEDIA</div>
+  <div class="nv nv-baja fade" style="--d:.35s">BAJA</div>
+
+  <svg class="lamina" width="1920" height="1080" viewBox="0 0 1920 1080" aria-hidden="true">
+    <g class="nivel-a">
+      <g class="nivel"><path class="guia" d="M364 400 H1800"/><path class="punta" d="M258 388 L281 400 L258 412 Z"/></g>
+    </g>
+    <path class="ld suelo arma" style="--d:.1s" d="M380 850 H1800"/>
+
+    <g class="medidor arma" style="--d:.1s">
+      <rect class="tubo" x="290" y="330" width="60" height="520" rx="10"/>
+      <rect class="relleno" x="299" y="339" width="42" height="502" rx="4"/>
+      <path class="ln" d="M350 400 H362 M350 560 H362 M350 700 H362"/>
+    </g>
+
+    <!-- Tramo 1: torres y línea de alta -->
+    <g class="tr tr1 arma" style="--d:.2s">
+      <g class="torre" data-x="540"></g>
+      <g class="torre" data-x="760"></g>
+      <path class="ln" d="M398 414 L412 386 M410 414 L424 386"/>
+      <path class="ln" d="M384 400 H594 Q650 444 706 400 H814 Q874 428 934 400"/>
+      <path class="flujo" d="M384 400 H594 Q650 444 706 400 H814 Q874 428 934 400"/>
+    </g>
+
+    <!-- Tramo 2: subestación y línea de media hasta el poste -->
+    <g class="tr tr2 arma" style="--d:.3s">
+      <path class="ld" d="M884 790 H1200 M884 790 V850 M908 790 V850 M932 790 V850 M956 790 V850 M980 790 V850 M1004 790 V850 M1028 790 V850 M1052 790 V850 M1076 790 V850 M1100 790 V850 M1124 790 V850 M1148 790 V850 M1172 790 V850 M1196 790 V850"/>
+      <path class="ln" d="M920 850 V374 M1020 850 V374 M908 374 H1032"/>
+      <path class="ld" d="M920 388 H1020 M920 412 L944 388 M1020 412 L996 388"/>
+      <path class="ln" d="M934 374 V400"/>
+      <path class="ld pn" d="M944 710 H960 V830 H944 Z M1080 710 H1096 V830 H1080 Z"/>
+      <path class="ld" d="M952 710 V830 M1088 710 V830"/>
+      <rect class="ln pn" x="960" y="690" width="120" height="160" rx="6"/>
+      <g class="bobina"><circle cx="1008" cy="770" r="24"/><circle cx="1032" cy="770" r="24"/></g>
+      <path class="ln" d="M980 690 V640 M1060 690 V666"/>
+      <path class="ld" d="M973 652 H987 M973 662 H987 M973 672 H987 M1053 678 H1067"/>
+      <path class="ln" d="M1150 850 V540 M1116 578 H1184 M1126 578 V560 M1174 578 V560"/>
+      <path class="ln" d="M934 400 Q940 560 980 640 M1060 666 Q1100 640 1126 560 H1174 Q1245 586 1316 560 H1364"/>
+      <path class="flujo" d="M934 400 Q940 560 980 640 V690 M1060 690 V666 Q1100 640 1126 560 H1174 Q1245 586 1316 560 H1364"/>
+    </g>
+
+    <!-- Tramo 3: poste con transformador y acometida en baja -->
+    <g class="tr tr3 arma" style="--d:.4s">
+      <path class="ln" d="M1340 850 V540 M1306 578 H1374 M1316 578 V560 M1364 578 V560 M1340 622 H1352 M1340 678 H1352"/>
+      <rect class="ln pn" x="1352" y="610" width="40" height="80" rx="8"/>
+      <g class="bobina"><circle cx="1366" cy="652" r="11"/><circle cx="1378" cy="652" r="11"/></g>
+      <path class="ln" d="M1372 610 V596 M1364 560 L1372 596 M1392 680 Q1490 726 1592 700"/>
+      <path class="flujo" d="M1364 560 L1372 596 V610 M1392 680 Q1490 726 1592 700"/>
+    </g>
+
+    <!-- Tramo 4: casa en corte, enchufe y lámpara -->
+    <g class="tr tr4 arma" style="--d:.5s">
+      <path class="ln" d="M1578 640 L1689 566 L1800 640 M1592 640 H1786 M1592 640 V850 M1786 640 V850"/>
+      <circle class="ln pn" cx="1592" cy="700" r="5"/>
+      <path class="ln" d="M1597 700 H1640 V770 H1660"/>
+      <rect class="ln pn" x="1660" y="738" width="52" height="64" rx="8"/>
+      <path class="ln" d="M1678 756 V772 M1694 756 V772"/>
+      <circle class="ln" cx="1686" cy="788" r="3"/>
+      <path class="ln" d="M1686 802 Q1694 850 1736 850 M1734 850 L1740 840 H1760 L1766 850 M1750 840 V717"/>
+      <path class="ln pn" d="M1724 700 L1734 660 H1766 L1776 700 Z"/>
+      <circle class="foco" cx="1750" cy="708" r="9"/>
+      <path class="flujo" d="M1597 700 H1640 V770 H1660 M1686 802 Q1694 850 1736 850"/>
+    </g>
+  </svg>
+
+  <div class="tag tn tn1 fade" style="--d:.4s">TORRES</div>
+  <div class="tag tn tn2 fade" style="--d:.45s">SUBESTACIÓN</div>
+  <div class="tag tn tn3 fade" style="--d:.5s">POSTE</div>
+  <div class="tag tn tn4 fade" style="--d:.55s">CASA</div>
+
+  <div class="cap fade" style="--d:.45s">
+    <div class="cp txt-l">En las torres, la energía viaja en <span class="accent">alta</span> tensión.</div>
+    <div class="cp txt-l">La subestación la baja a <span class="accent">media</span> tensión.</div>
+    <div class="cp txt-l">El transformador del poste la deja en <span class="accent">baja</span>.</div>
+    <div class="cp txt-l">Al enchufe llega en <span class="accent">baja</span>, lista para usar.</div>
+  </div>
+</section>
+
+<section class="slide interstitial" id="i-circuito" data-auto="2.6">
+  <svg class="placa" width="1920" height="1080" viewBox="0 0 1920 1080" aria-hidden="true">
+    <defs>
+      <pattern id="i-circuito-malla" width="40" height="40" patternUnits="userSpaceOnUse"><circle cx="20" cy="20" r="2"/></pattern>
+    </defs>
+    <rect width="1920" height="1080" fill="url(#i-circuito-malla)"/>
+    <g class="deco-g"></g>
+    <g class="base"></g>
+    <g class="vias"></g>
+    <g class="chips"></g>
+    <g class="luz"><g class="lp"></g><g class="lq"></g></g>
+  </svg>
+</section>
+
+<script>
+(function () {
+  "use strict";
+  var NS = "http://www.w3.org/2000/svg";
+
+  function r1(v) { return Math.round(v * 10) / 10; }
+
+  // Torre de celosía vista de frente: patas, aguja, ménsula y dos cadenas de aisladores.
+  // yb suelo, yp punta, ya altura de la ménsula; los aisladores terminan en ya + 26.
+  function torre(X, yb, yp, ya) {
+    var yn = ya + 10;
+    var e = "M" + (X - 58) + " " + yb + " L" + (X - 16) + " " + yn + " L" + X + " " + yp + " L" + (X + 16) + " " + yn + " L" + (X + 58) + " " + yb;
+    e += " M" + (X - 62) + " " + ya + " H" + (X + 62);
+    e += " M" + (X - 62) + " " + ya + " L" + (X - 17) + " " + (ya + 22) + " M" + (X + 62) + " " + ya + " L" + (X + 17) + " " + (ya + 22);
+    e += " M" + (X - 54) + " " + ya + " V" + (ya + 26) + " M" + (X + 54) + " " + ya + " V" + (ya + 26);
+    var f = [1, .78, .59, .43, .3, .19, .1], a = "", b = "";
+    for (var i = 0; i < f.length; i++) {
+      var y = yn + f[i] * (yb - yn), w = 16 + 42 * (y - yn) / (yb - yn), sg = i % 2 ? 1 : -1;
+      a += (i ? " L" : "M") + r1(X + sg * w) + " " + r1(y);
+      b += (i ? " L" : " M") + r1(X - sg * w) + " " + r1(y);
+    }
+    var d = a + b + " M" + (X - 16) + " " + yn + " H" + (X + 16);
+    [-54, 54].forEach(function (o) {
+      for (var k = 8; k <= 20; k += 6) d += " M" + (X + o - 6) + " " + (ya + k) + " H" + (X + o + 6);
+    });
+    return '<path class="ld" d="' + d + '"/><path class="ln" d="' + e + '"/>';
+  }
+
+  /* ---------- red ---------- */
+  (function () {
+    var S = document.getElementById("red");
+    if (!S) return;
+    S.querySelectorAll(".torre").forEach(function (g) {
+      g.innerHTML = torre(+g.getAttribute("data-x"), 500, 70, 150);
+    });
+
+    // Ruta del pulso: tipo (L polilínea, Q curva), puntos, radio del pulso y, si el tramo va
+    // dentro de un transformador, la caja que se activa mientras el pulso la cruza.
+    // El radio cambia dentro de cada caja: chico al salir de la central, grande en alta, menor en media y en baja.
+    var RUTA = [
+      ["L", [330, 466, 352, 466], 4.5],
+      ["L", [352, 466, 392, 466, 392, 432], 4.5, "a"],
+      ["L", [392, 432, 392, 404], 8],
+      ["Q", [392, 404, 500, 330, 546, 176], 8],
+      ["L", [546, 176, 654, 176], 8],
+      ["Q", [654, 176, 720, 220, 786, 176], 8],
+      ["L", [786, 176, 894, 176], 8],
+      ["Q", [894, 176, 960, 220, 1026, 176], 8],
+      ["L", [1026, 176, 1134, 176], 8],
+      ["Q", [1134, 176, 1180, 196, 1226, 176], 8],
+      ["Q", [1226, 176, 1228, 290, 1236, 352], 8],
+      ["L", [1236, 352, 1236, 392], 8],
+      ["L", [1236, 392, 1236, 440, 1272, 440, 1272, 392], 6, "b"],
+      ["L", [1272, 392, 1272, 372], 6],
+      ["Q", [1272, 372, 1370, 345, 1446, 232], 6],
+      ["L", [1446, 232, 1494, 232, 1495, 276, 1495, 290], 6],
+      ["L", [1495, 290, 1495, 326, 1510, 326], 4.5, "c"],
+      ["Q", [1510, 326, 1524, 392, 1540, 424], 4.5]
+    ];
+
+    var P = [], dCable = "";
+    RUTA.forEach(function (tr) {
+      var p = tr[1], m = [], k;
+      if (tr[0] === "Q") {
+        for (k = 0; k <= 20; k++) {
+          var u = k / 20, a = (1 - u) * (1 - u), b = 2 * (1 - u) * u, c = u * u;
+          m.push([a * p[0] + b * p[2] + c * p[4], a * p[1] + b * p[3] + c * p[5]]);
+        }
+      } else {
+        for (k = 0; k < p.length; k += 2) m.push([p[k], p[k + 1]]);
+      }
+      if (!tr[3]) dCable += "M" + p[0] + " " + p[1] + (tr[0] === "Q" ? " Q" : " L") + p.slice(2).join(" ") + " ";
+      m.forEach(function (q, i) {
+        if (i === 0 && P.length) return;
+        var s = 0;
+        if (P.length) {
+          var z = P[P.length - 1];
+          s = z.s + Math.sqrt((q[0] - z.x) * (q[0] - z.x) + (q[1] - z.y) * (q[1] - z.y));
+        }
+        P.push({ x: q[0], y: q[1], s: s, r: tr[2], c: tr[3] || "" });
+      });
+    });
+    var L = P[P.length - 1].s;
+    S.querySelector(".cable").setAttribute("d", dCable.trim());
+
+    // Punto de la ruta a una distancia s; los atributos son los del tramo que termina en el punto j
+    function en(s) {
+      var lo = 1, hi = P.length - 1;
+      while (lo < hi) {
+        var mid = (lo + hi) >> 1;
+        if (P[mid].s < s) lo = mid + 1; else hi = mid;
+      }
+      var a = P[lo - 1], b = P[lo], k = b.s > a.s ? (s - a.s) / (b.s - a.s) : 0;
+      return { x: a.x + (b.x - a.x) * k, y: a.y + (b.y - a.y) * k, r: b.r, c: b.c };
+    }
+
+    var V = 640, T0 = 1.3, SP = 230, M = Math.ceil(L / SP) + 1;
+    var gp = S.querySelector(".pulsos"), pul = [];
+    for (var i = 0; i < M; i++) {
+      var c = document.createElementNS(NS, "circle");
+      c.setAttribute("r", "1");
+      c.setAttribute("class", "pulso");
+      c.style.opacity = "0";
+      gp.appendChild(c);
+      pul.push(c);
+    }
+    var cajas = {};
+    S.querySelectorAll("[data-caja]").forEach(function (e) { cajas[e.getAttribute("data-caja")] = e; });
+
+    function cuadro(t) {
+      var base = (t - T0) * V, act = {};
+      for (var i = 0; i < M; i++) {
+        var s = base - i * SP, c = pul[i];
+        if (s < 0) { c.style.opacity = "0"; continue; }
+        s = s % (M * SP);
+        if (s > L) { c.style.opacity = "0"; continue; }
+        var p = en(s);
+        if (p.c) { act[p.c] = 1; c.style.opacity = "0"; continue; }
+        c.style.opacity = Math.max(0, Math.min(1, s / 30, (L - s) / 24)).toFixed(2);
+        c.setAttribute("transform", "translate(" + r1(p.x) + " " + r1(p.y) + ") scale(" + p.r + ")");
+      }
+      for (var k in cajas) cajas[k].classList.toggle("on", !!act[k]);
+      // La ventana se enciende cuando el primer pulso termina la ruta
+      if (base >= L) S.classList.add("luz");
+    }
+
+    Deck.on("red", {
+      enter: function (s) {
+        S.classList.remove("luz");
+        pul.forEach(function (c) { c.style.opacity = "0"; });
+        Deck.loop(s, function (t) { cuadro(t); });
+      },
+      leave: function () {
+        for (var k in cajas) cajas[k].classList.remove("on");
+      }
+    });
+  })();
+
+  /* ---------- tension ---------- */
+  (function () {
+    var S = document.getElementById("tension");
+    if (!S) return;
+    S.querySelectorAll(".torre").forEach(function (g) {
+      g.innerHTML = torre(+g.getAttribute("data-x"), 850, 300, 374);
+    });
+
+    // Altura del cable en cada tramo: el medidor marca la misma altura que el cable resaltado
+    var NIV = [400, 560, 700, 770], ETQ = [0, 1, 2, 2];
+    var tramos = S.querySelectorAll(".tr"), nombres = S.querySelectorAll(".tn");
+    var niveles = S.querySelectorAll(".nv"), caps = S.querySelectorAll(".cp");
+    var relleno = S.querySelector(".relleno"), nivel = S.querySelector(".nivel"), num = S.querySelector(".paso b");
+    var paso = 1;
+
+    function aplicar(n) {
+      paso = n;
+      for (var i = 0; i < 4; i++) {
+        tramos[i].classList.toggle("activo", i === n - 1);
+        tramos[i].classList.toggle("hecho", i < n - 1);
+        nombres[i].classList.toggle("on", i === n - 1);
+        caps[i].classList.toggle("on", i === n - 1);
+      }
+      for (var k = 0; k < niveles.length; k++) niveles[k].classList.toggle("on", k === ETQ[n - 1]);
+      relleno.style.transform = "scaleY(" + ((841 - NIV[n - 1]) / 502).toFixed(4) + ")";
+      nivel.style.transform = "translateY(" + (NIV[n - 1] - 400) + "px)";
+      num.textContent = "0" + n;
+    }
+
+    // Aplica un estado sin transiciones y fuerza el cálculo de estilos antes de soltarlas
+    function fijar(fn) {
+      S.classList.add("now");
+      fn();
+      void S.offsetWidth;
+      S.classList.remove("now");
+    }
+
+    fijar(function () { aplicar(1); });
+
+    Deck.on("tension", {
+      enter: function (s, dir) {
+        S.classList.remove("entra");
+        if (dir === -1) {
+          fijar(function () { aplicar(4); });
+          return;
+        }
+        // Hacia adelante el medidor se llena desde cero hasta el nivel alto
+        fijar(function () {
+          aplicar(1);
+          relleno.style.transform = "scaleY(0)";
+          nivel.style.transform = "translateY(441px)";
+        });
+        S.classList.add("entra");
+        aplicar(1);
+      },
+      leave: function () { S.classList.remove("entra"); },
+      next: function () {
+        if (paso >= 4) return false;
+        S.classList.remove("entra");
+        aplicar(paso + 1);
+        return true;
+      },
+      prev: function () {
+        if (paso <= 1) return false;
+        S.classList.remove("entra");
+        aplicar(paso - 1);
+        return true;
+      }
+    });
+  })();
+
+  /* ---------- i-circuito ---------- */
+  (function () {
+    var S = document.getElementById("i-circuito");
+    if (!S) return;
+    var gDeco = S.querySelector(".deco-g"), gBase = S.querySelector(".base"), gVias = S.querySelector(".vias");
+    var gChips = S.querySelector(".chips"), gLuz = S.querySelector(".luz"), gLp = S.querySelector(".lp"), gLq = S.querySelector(".lq");
+
+    function nodo(tag, at, padre) {
+      var e = document.createElementNS(NS, tag);
+      for (var k in at) e.setAttribute(k, at[k]);
+      padre.appendChild(e);
+      return e;
+    }
+    // Veinticuatro carriles en grupos de cuatro, con aire entre grupos para que quepa cada chip
+    function carril(i) { return 80 + i * 30 + Math.floor(i / 4) * 46; }
+    function centro(a, b) { return (carril(a) + carril(b)) / 2; }
+
+    var V = 1200, T0 = 0.15, CICLO = 3.3, APAGA = 0.5;
+    var ramas = [], puntos = [];
+
+    // Una rama sale de (x0, y0), avanza recto, gira a 45 grados hasta y1 y sigue recta hasta x1
+    function rama(x0, y0, rec, y1, x1, t0) {
+      var dy = Math.abs(y1 - y0), xd = x0 + rec + dy;
+      var d = "M" + x0 + " " + y0 + " H" + (x0 + rec) + " L" + xd + " " + y1 + " H" + x1;
+      nodo("path", { "class": "pista", d: d }, gBase);
+      var el = nodo("path", { "class": "corriente", d: d, pathLength: "1" }, gLp);
+      var dur = (rec + dy * Math.SQRT2 + (x1 - xd)) / V;
+      ramas.push({ el: el, t0: t0, dur: dur, p: -1 });
+      return t0 + dur;
+    }
+    function punto(el, t) { puntos.push({ el: el, t: t, on: false }); }
+    function via(x, y, t) {
+      nodo("circle", { "class": "via", cx: x, cy: y, r: 9 }, gVias);
+      punto(nodo("circle", { "class": "via-on", cx: x, cy: y, r: 9 }, gLq), t);
+    }
+
+    // Pistas de relleno, sin corriente, para dar textura de placa
+    [
+      "M0 150 H220 L280 90 H520", "M0 250 H150 L200 300 H300", "M0 930 H220 L280 990 H520", "M0 830 H150 L200 780 H300",
+      "M560 1080 V1040 L600 1000 H760", "M600 0 V40 L640 80 H780"
+    ].forEach(function (d) { nodo("path", { "class": "deco", d: d }, gDeco); });
+    [[520, 90], [300, 300], [520, 990], [300, 780], [760, 1000], [780, 80]].forEach(function (v) {
+      nodo("circle", { "class": "via", cx: v[0], cy: v[1], r: 9 }, gDeco);
+    });
+
+    // Fuente: bornera a la izquierda con su pad de salida
+    nodo("rect", { "class": "chip", x: 40, y: 470, width: 88, height: 140, rx: 6 }, gChips);
+    nodo("path", { "class": "muesca", d: "M62 500 H106 M62 540 H106 M62 580 H106" }, gChips);
+    nodo("circle", { "class": "fuente", cx: 150, cy: 540, r: 14 }, gChips);
+
+    var CHX = [1450, 1560, 1500, 1610, 1470, 1540];
+    var BUS = [1120, 1250, 1170, 1300, 1140, 1230];
+    var W = 190;
+
+    var t1 = rama(128, 540, 0, 540, 360, T0);
+    via(360, 540, t1);
+    [[0, 7], [8, 15], [16, 23]].forEach(function (g, a) {
+      var y1 = centro(g[0], g[1]);
+      var t2 = rama(360, 540, 24, y1, 860, t1);
+      via(860, y1, t2);
+      [[g[0], g[0] + 3], [g[0] + 4, g[1]]].forEach(function (h, b) {
+        var k = a * 2 + b, y2 = centro(h[0], h[1]), x = CHX[k], fin = 0;
+        var t3 = rama(860, y1, 20, y2, BUS[k], t2);
+        via(BUS[k], y2, t3);
+        for (var j = h[0]; j <= h[1]; j++) {
+          var y3 = carril(j);
+          var t4 = rama(BUS[k], y2, 14, y3, x - 20, t3);
+          nodo("rect", { "class": "pad", x: x - 22, y: y3 - 7, width: 20, height: 14 }, gVias);
+          punto(nodo("rect", { "class": "pad-on", x: x - 22, y: y3 - 7, width: 20, height: 14 }, gLq), t4);
+          fin = Math.max(fin, t4);
+        }
+        // Chip con salidas hacia el borde derecho y un indicador que se enciende al recibir corriente
+        var top = carril(h[0]) - 22, alto = carril(h[1]) - carril(h[0]) + 44;
+        [h[0] + 1, h[0] + 2].forEach(function (j) {
+          nodo("path", { "class": "deco", d: "M" + (x + W + 20) + " " + carril(j) + " H1920" }, gDeco);
+          nodo("rect", { "class": "pad-off", x: x + W + 2, y: carril(j) - 7, width: 20, height: 14 }, gVias);
+        });
+        nodo("rect", { "class": "chip", x: x, y: top, width: W, height: alto, rx: 4 }, gChips);
+        nodo("path", { "class": "muesca", d: "M" + (x + W / 2 - 14) + " " + top + " A14 14 0 0 0 " + (x + W / 2 + 14) + " " + top }, gChips);
+        nodo("circle", { "class": "led", cx: x + W - 26, cy: top + 24, r: 8 }, gChips);
+        punto(nodo("circle", { "class": "led-on", cx: x + W - 26, cy: top + 24, r: 8 }, gLq), fin + 0.08);
+      });
+    });
+
+    function cuadro(t) {
+      var u = t % CICLO;
+      gLuz.style.opacity = u > CICLO - APAGA ? ((CICLO - u) / APAGA).toFixed(2) : "1";
+      for (var i = 0; i < ramas.length; i++) {
+        var r = ramas[i], p = Math.max(0, Math.min(1, (u - r.t0) / r.dur));
+        if (p === r.p) continue;
+        r.p = p;
+        r.el.style.visibility = p > 0 ? "visible" : "hidden";
+        r.el.style.strokeDashoffset = (1 - p).toFixed(4);
+      }
+      for (var j = 0; j < puntos.length; j++) {
+        var q = puntos[j], on = u >= q.t;
+        if (on === q.on) continue;
+        q.on = on;
+        q.el.classList.toggle("on", on);
+      }
+    }
+
+    Deck.on("i-circuito", {
+      enter: function (s) {
+        cuadro(0);
+        Deck.loop(s, function (t) { cuadro(t); });
+      }
+    });
+  })();
+})();
+</script>

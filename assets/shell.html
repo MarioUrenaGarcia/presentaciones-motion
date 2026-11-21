@@ -1,0 +1,601 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title><!--TITULO--></title>
+<style>
+/*FONTS*/
+</style>
+<style>
+:root {
+  --ground: #0d0d0f;
+  --ink: #f2f0ec;
+  --muted: #74747a;
+  --accent: #ff2d2d;
+  --panel: #17171a;
+  --bar: #b31217;
+  --line: #2a2a30;
+  --dim: #3a3a40;
+  --display: "Bebas Neue", Impact, "Arial Narrow", sans-serif;
+  --body: "Bahnschrift", "Segoe UI", Arial, sans-serif;
+  --mono: Consolas, "Cascadia Mono", "Courier New", monospace;
+  --ease: cubic-bezier(.65, 0, .35, 1);
+  --out: cubic-bezier(.22, 1, .36, 1);
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { width: 100%; height: 100%; overflow: hidden; background: #000; }
+body { font-family: var(--body); color: var(--ink); -webkit-font-smoothing: antialiased; }
+body.idle { cursor: none; }
+
+/* El escenario se dibuja siempre a 1920x1080 y se escala al viewport, asi el layout es identico en cualquier pantalla */
+#deck {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 1920px;
+  height: 1080px;
+  overflow: hidden;
+  background: var(--ground);
+  transform-origin: center center;
+}
+.slide {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  background: var(--ground);
+  visibility: hidden;
+}
+.slide.is-active { visibility: visible; z-index: 2; }
+
+/* Grano de impresion al 3-4%, estatico para no competir con el contenido */
+#grain {
+  position: absolute;
+  inset: 0;
+  z-index: 50;
+  pointer-events: none;
+  opacity: .05;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='240' height='240'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+}
+#blackout { position: absolute; inset: 0; z-index: 60; background: #000; display: none; }
+body.black #blackout { display: block; }
+
+#progress { position: absolute; left: 0; bottom: 0; height: 5px; width: 100%; z-index: 40; background: transparent; }
+#progress i { display: block; height: 100%; width: 0; background: var(--bar); transition: width .45s var(--ease); }
+#counter {
+  position: absolute;
+  right: 56px;
+  bottom: 30px;
+  z-index: 40;
+  font: 600 22px/1 var(--body);
+  letter-spacing: .18em;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+#counter b { color: var(--ink); font-weight: 600; }
+body.on-interstitial #counter { opacity: 0; }
+#hint {
+  position: absolute;
+  right: 56px;
+  top: 40px;
+  z-index: 40;
+  font: 500 22px/1.4 var(--body);
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--muted);
+  transition: opacity .6s;
+}
+#hint.gone { opacity: 0; }
+/* Capturas (miniaturas, PDF, PowerPoint): solo el contenido, sin contador, barra ni botones de presentar */
+body.captura #counter, body.captura #progress, body.captura #hint, body.captura #gal-btn { display: none !important; }
+
+/* Tipografia y piezas compartidas */
+.kicker {
+  position: absolute;
+  left: 140px;
+  top: 96px;
+  font: 600 28px/1 var(--body);
+  letter-spacing: .32em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.kicker b { color: var(--accent); font-weight: 600; }
+.display { font-family: var(--display); font-weight: 400; line-height: .9; letter-spacing: .01em; }
+.h-xl { font-family: var(--display); font-size: 180px; line-height: .88; }
+.h-l { font-family: var(--display); font-size: 128px; line-height: .9; }
+.h-m { font-family: var(--display); font-size: 96px; line-height: .92; }
+.h-s { font-family: var(--display); font-size: 68px; line-height: .95; }
+.txt-l { font-size: 46px; line-height: 1.12; }
+.txt { font-size: 38px; line-height: 1.16; }
+.txt-s { font-size: 30px; line-height: 1.2; }
+.tag {
+  font: 600 24px/1 var(--body);
+  letter-spacing: .24em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.num { font-family: var(--display); font-variant-numeric: tabular-nums; line-height: .85; }
+/* Evita palabras sueltas en la ultima linea de titulos y parrafos */
+.h-xl, .h-l, .h-m, .h-s, .display { text-wrap: balance; }
+.txt-l, .txt, .txt-s, .foot { text-wrap: pretty; }
+.mono { font-family: var(--mono); }
+.accent { color: var(--accent); }
+.ink { color: var(--ink); }
+.dim { color: var(--muted); }
+.foot {
+  position: absolute;
+  left: 140px;
+  bottom: 52px;
+  max-width: 1460px;
+  font-size: 24px;
+  line-height: 1.3;
+  letter-spacing: .02em;
+  color: var(--muted);
+}
+
+/* Entradas de texto: rapidas y quietas al aterrizar. --d controla el retraso de cada pieza */
+@keyframes inBlur { from { opacity: 0; filter: blur(6px); } to { opacity: 1; filter: blur(0); } }
+@keyframes inLeft { from { opacity: 0; transform: translateX(-18px); } to { opacity: 1; transform: none; } }
+@keyframes inUp { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: none; } }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes stamp { 0% { opacity: 0; transform: scale(1.14); } 55% { opacity: 1; } 100% { opacity: 1; transform: scale(1); } }
+@keyframes wipeX { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+@keyframes wipeY { from { transform: scaleY(0); } to { transform: scaleY(1); } }
+.slide .in, .slide .in-left, .slide .in-up, .slide .fade, .slide .stamp { opacity: 0; }
+.slide.is-active .in { animation: inBlur .42s var(--out) var(--d, 0s) both; }
+.slide.is-active .in-left { animation: inLeft .5s var(--out) var(--d, 0s) both; }
+.slide.is-active .in-up { animation: inUp .5s var(--out) var(--d, 0s) both; }
+.slide.is-active .fade { animation: fadeIn .6s ease-out var(--d, 0s) both; }
+.slide.is-active .stamp { animation: stamp .32s var(--out) var(--d, 0s) both; }
+.slide .wipe { transform: scaleX(0); transform-origin: left center; }
+.slide.is-active .wipe { animation: wipeX .55s var(--ease) var(--d, 0s) both; }
+.slide .wipe-y { transform: scaleY(0); transform-origin: center top; }
+.slide.is-active .wipe-y { animation: wipeY .55s var(--ease) var(--d, 0s) both; }
+
+/* Slides pendientes: las escribe esqueleto.py desde el guion y las reemplaza quien construye cada bloque */
+.slide.pendiente::before {
+  content: "";
+  position: absolute;
+  inset: 60px;
+  border: 3px dashed var(--dim);
+}
+.slide.pendiente .pend-tag {
+  position: absolute;
+  right: 140px;
+  top: 96px;
+  font: 600 24px/1 var(--body);
+  letter-spacing: .24em;
+  color: var(--accent);
+}
+.slide.pendiente .pend-titulo {
+  position: absolute;
+  left: 140px;
+  top: 300px;
+  max-width: 1500px;
+  font: 400 110px/.92 var(--display);
+  color: var(--ink);
+  text-wrap: balance;
+}
+.slide.pendiente .pend-visual {
+  position: absolute;
+  left: 140px;
+  bottom: 140px;
+  max-width: 1300px;
+  font-size: 30px;
+  line-height: 1.25;
+  color: var(--muted);
+}
+</style>
+<style>
+/*TEMA*/
+</style>
+<script>
+(function () {
+  "use strict";
+  var hooks = {};
+  var slides = [];
+  var idx = -1;
+  var loops = [];
+  var timers = [];
+  var autoTimer = null;
+  var params = new URLSearchParams(location.search);
+  var shotMode = params.has("shot");
+  var noAuto = shotMode || params.has("noauto");
+
+  function slideOf(el) {
+    return el && el.closest ? el.closest(".slide") : null;
+  }
+
+  // Numeros en formato es-CO: punto de miles y coma decimal, sin depender del locale del navegador
+  function fmt(n, dec) {
+    dec = dec || 0;
+    var s = Math.abs(n).toFixed(dec).split(".");
+    var i = s[0].replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+    return (n < 0 ? "-" : "") + i + (s[1] ? "," + s[1] : "");
+  }
+
+  // PRNG con semilla (mulberry32) para que los patrones generados sean iguales en cada pasada
+  function rand(seed) {
+    var a = seed >>> 0;
+    return function () {
+      a = (a + 0x6d2b79f5) >>> 0;
+      var t = a;
+      t = Math.imul(t ^ (t >>> 15), t | 1);
+      t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+
+  function stopFor(slide) {
+    loops = loops.filter(function (r) {
+      if (r.slide === slide) { r.alive = false; cancelAnimationFrame(r.raf); return false; }
+      return true;
+    });
+    timers = timers.filter(function (r) {
+      if (r.slide === slide) { clearTimeout(r.id); return false; }
+      return true;
+    });
+  }
+
+  var Deck = {
+    on: function (id, h) { hooks[id] = h; },
+    fmt: fmt,
+    rand: rand,
+    // fn(t, dt) corre en cada frame mientras la diapositiva este activa; t en segundos desde que entro
+    loop: function (slide, fn) {
+      var now = performance.now();
+      var rec = { slide: slide, alive: true, start: now, last: now, raf: 0 };
+      function step(ts) {
+        if (!rec.alive) return;
+        var t = Math.max(0, (ts - rec.start) / 1000);
+        var dt = Math.max(0, (ts - rec.last) / 1000);
+        rec.last = ts;
+        fn(t, dt);
+        rec.raf = requestAnimationFrame(step);
+      }
+      rec.raf = requestAnimationFrame(step);
+      loops.push(rec);
+      return { stop: function () { rec.alive = false; cancelAnimationFrame(rec.raf); } };
+    },
+    after: function (slide, ms, fn) {
+      var id = setTimeout(fn, ms);
+      timers.push({ slide: slide, id: id });
+    },
+    countUp: function (el, to, o) {
+      o = o || {};
+      var from = o.from || 0, dur = o.duration || 1.3, dec = o.decimals || 0, delay = o.delay || 0;
+      el.textContent = fmt(from, dec);
+      var h = Deck.loop(slideOf(el), function (t) {
+        var p = Math.min(1, Math.max(0, (t - delay) / dur));
+        var e = 1 - Math.pow(1 - p, 3);
+        el.textContent = fmt(from + (to - from) * e, dec);
+        if (p >= 1) h.stop();
+      });
+    },
+    type: function (el, text, o) {
+      o = o || {};
+      var cps = o.cps || 40, delay = o.delay || 0;
+      el.textContent = "";
+      var h = Deck.loop(slideOf(el), function (t) {
+        var n = Math.floor(Math.max(0, t - delay) * cps);
+        el.textContent = text.slice(0, n);
+        if (n >= text.length) h.stop();
+      });
+    },
+    go: go,
+    // Una slide con pasos internos define next/prev en su gancho y devuelve true mientras consuma la tecla
+    next: function () {
+      var cur = slides[idx], h = cur && hooks[cur.id];
+      if (h && h.next && h.next(cur)) return;
+      go(idx + 1, 1);
+    },
+    prev: function () {
+      var cur = slides[idx], h = cur && hooks[cur.id];
+      if (h && h.prev && h.prev(cur)) return;
+      var j = idx - 1;
+      while (j > 0 && slides[j].classList.contains("interstitial")) j--;
+      go(j, -1);
+    }
+  };
+  window.Deck = Deck;
+
+  function go(n, dir) {
+    if (!slides.length) return;
+    n = Math.max(0, Math.min(slides.length - 1, n));
+    if (n === idx) return;
+    clearTimeout(autoTimer);
+    var old = slides[idx];
+    if (old) {
+      stopFor(old);
+      old.classList.remove("is-active");
+      var ho = hooks[old.id];
+      if (ho && ho.leave) ho.leave(old);
+    }
+    idx = n;
+    var cur = slides[idx];
+    void cur.offsetWidth;
+    cur.classList.add("is-active");
+    var hc = hooks[cur.id];
+    if (hc && hc.enter) hc.enter(cur, dir);
+    var inter = cur.classList.contains("interstitial");
+    document.body.classList.toggle("on-interstitial", inter);
+    var auto = parseFloat(cur.dataset.auto || "0");
+    if (auto > 0 && dir !== -1 && !noAuto) {
+      autoTimer = setTimeout(function () { go(idx + 1, 1); }, auto * 1000);
+    }
+    var content = slides.filter(function (s) { return !s.classList.contains("interstitial"); });
+    var pos = content.indexOf(cur);
+    if (pos < 0) {
+      for (var k = idx; k >= 0; k--) { pos = content.indexOf(slides[k]); if (pos >= 0) break; }
+    }
+    document.querySelector("#counter").innerHTML = "<b>" + String(pos + 1).padStart(2, "0") + "</b> / " + String(content.length).padStart(2, "0");
+    document.querySelector("#progress i").style.width = ((idx + 1) / slides.length * 100) + "%";
+    history.replaceState(null, "", "#" + (idx + 1));
+  }
+
+  function fit() {
+    var s = Math.min(window.innerWidth / 1920, window.innerHeight / 1080);
+    document.getElementById("deck").style.transform = "translate(-50%, -50%) scale(" + s + ")";
+  }
+
+  function init() {
+    slides = Array.prototype.slice.call(document.querySelectorAll("#deck > .slide"));
+    fit();
+    window.addEventListener("resize", fit);
+    var start = parseInt((location.hash || "#1").slice(1), 10);
+    go(isNaN(start) ? 0 : start - 1, 0);
+
+    var hint = document.getElementById("hint");
+    if (shotMode) { hint.classList.add("gone"); document.body.classList.add("captura"); }
+    else setTimeout(function () { hint.classList.add("gone"); }, 5000);
+
+    document.addEventListener("keydown", function (e) {
+      if (e.ctrlKey || e.metaKey || e.altKey) return;
+      // Mientras se escribe en un texto editable (editor de vivo.py, buscador) las teclas no mueven el deck
+      if (e.target.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName)) return;
+      var k = e.key;
+      if (k === "ArrowRight" || k === "ArrowDown" || k === "PageDown" || k === " " || k === "Enter" || k === "n") { e.preventDefault(); Deck.next(); }
+      else if (k === "ArrowLeft" || k === "ArrowUp" || k === "PageUp" || k === "Backspace" || k === "p") { e.preventDefault(); Deck.prev(); }
+      else if (k === "Home") { e.preventDefault(); go(0, -1); }
+      else if (k === "End") { e.preventDefault(); go(slides.length - 1, -1); }
+      else if (k === "f" || k === "F") {
+        if (document.fullscreenElement) document.exitFullscreen();
+        else document.documentElement.requestFullscreen();
+      }
+      else if (k === "b" || k === "B" || k === ".") { document.body.classList.toggle("black"); }
+    });
+    document.addEventListener("click", function (e) {
+      if (e.clientX < window.innerWidth * 0.2) Deck.prev(); else Deck.next();
+    });
+    var tx = null;
+    document.addEventListener("touchstart", function (e) { tx = e.touches[0].clientX; }, { passive: true });
+    document.addEventListener("touchend", function (e) {
+      if (tx === null) return;
+      var dx = e.changedTouches[0].clientX - tx;
+      if (Math.abs(dx) > 40) { if (dx < 0) Deck.next(); else Deck.prev(); }
+      tx = null;
+    });
+    var idleT = null;
+    document.addEventListener("mousemove", function () {
+      document.body.classList.remove("idle");
+      clearTimeout(idleT);
+      idleT = setTimeout(function () { document.body.classList.add("idle"); }, 2000);
+    });
+  }
+  document.addEventListener("DOMContentLoaded", init);
+})();
+</script>
+</head>
+<body>
+<div id="deck">
+<!--SLIDES-->
+  <div id="grain"></div>
+  <div id="progress"><i></i></div>
+  <div id="counter"></div>
+  <div id="hint">Flechas o clic para avanzar, F pantalla completa, G todas las diapositivas</div>
+  <div id="blackout"></div>
+</div>
+<!-- Galería: tecla G o botón DIAPOSITIVAS; build.py incrusta las miniaturas de <deck>/miniaturas -->
+<style>
+#gal-btn { position: fixed; left: 18px; bottom: 18px; z-index: 50; padding: 10px 16px; border: 2px solid var(--line);
+  background: var(--panel); color: var(--ink); font: 600 15px/1 var(--body); letter-spacing: .12em; cursor: pointer;
+  border-radius: 4px; opacity: 0; transition: opacity .25s; }
+body.gal-raton #gal-btn { opacity: .92; }
+#gal { position: fixed; inset: 0; z-index: 60; background: var(--ground); display: none; flex-direction: column; }
+#gal.abierta { display: flex; }
+#gal header { display: flex; align-items: center; gap: 18px; padding: 18px 28px; border-bottom: 2px solid var(--line); }
+#gal header b { font: 400 34px/1 var(--display); color: var(--ink); letter-spacing: .02em; }
+#gal header input { flex: 1; max-width: 520px; padding: 10px 14px; background: var(--panel); color: var(--ink);
+  border: 2px solid var(--line); font: 500 17px var(--body); border-radius: 4px; outline: none; }
+#gal header input:focus { border-color: var(--accent); }
+#gal header span { color: var(--muted); font: 500 15px var(--body); }
+#gal header button { margin-left: auto; padding: 10px 16px; background: transparent; color: var(--ink);
+  border: 2px solid var(--line); font: 600 15px var(--body); cursor: pointer; border-radius: 4px; }
+#gal .gal-cuerpo { overflow-y: auto; padding: 10px 28px 40px; }
+#gal h3 { margin: 26px 0 10px; font: 400 26px/1 var(--display); color: var(--accent); letter-spacing: .04em; }
+#gal .gal-rej { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 12px; }
+#gal .gal-c > img { display: block; width: 100%; aspect-ratio: 16 / 9; object-fit: cover; margin-bottom: 8px; border: 1px solid var(--line); background: var(--ground); }
+#gal .gal-c { position: relative; padding: 12px 14px 14px; background: var(--panel); border: 2px solid var(--line);
+  border-radius: 4px; cursor: pointer; text-align: left; color: var(--ink); font: inherit; min-height: 92px; }
+#gal .gal-c:hover, #gal .gal-c.foco { border-color: var(--ink); }
+#gal .gal-c.actual { border-color: var(--accent); }
+#gal .gal-c > em { display: block; font: 700 13px/1 var(--mono); color: var(--muted); font-style: normal; }
+#gal .gal-c > small { display: block; margin-top: 8px; font: 600 12px/1.2 var(--body); color: var(--muted);
+  letter-spacing: .12em; text-transform: uppercase; }
+#gal .gal-c > strong { display: block; margin-top: 6px; font: 600 16px/1.25 var(--body); color: var(--ink); }
+#gal .gal-c.prac::after { content: ""; position: absolute; right: 10px; top: 10px; width: 12px; height: 12px; background: var(--accent); }
+#gal .gal-c.trans > strong { color: var(--muted); font-weight: 500; }
+#gal .gal-ley { color: var(--muted); font: 500 14px var(--body); display: flex; align-items: center; gap: 8px; }
+#gal .gal-ley i { width: 12px; height: 12px; background: var(--accent); display: inline-block; }
+#gal .gal-c .deck-mini { margin-bottom: 8px; border: 1px solid var(--line); }
+/* Miniatura viva: copia de la slide congelada en su estado final, para cuando no hay imagen generada */
+.deck-mini { position: relative; width: 100%; aspect-ratio: 16 / 9; overflow: hidden; background: var(--ground); }
+.deck-mini > img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.deck-mini-escala { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; transform-origin: 0 0; pointer-events: none; }
+.deck-mini-escala > .slide { visibility: visible; }
+.deck-mini-escala *, .deck-mini-escala *::before, .deck-mini-escala *::after {
+  animation-delay: -30s !important; animation-play-state: paused !important; transition: none !important; }
+</style>
+<button id="gal-btn" type="button" title="Ver todas las diapositivas (G)">DIAPOSITIVAS</button>
+<div id="gal" role="dialog" aria-label="Ir a una diapositiva">
+  <header><b>IR A</b><input type="search" placeholder="Buscar por título o número" aria-label="Buscar">
+    <span class="gal-ley"><i></i>práctica</span><span>Enter abre, Esc cierra</span><button type="button">Cerrar</button></header>
+  <div class="gal-cuerpo"></div>
+</div>
+<script>
+(function () {
+  var gal = document.getElementById("gal"), btn = document.getElementById("gal-btn");
+  var cuerpo = gal.querySelector(".gal-cuerpo"), buscar = gal.querySelector("input");
+  var cerrar = gal.querySelector("header button"), tarjetas = [], foco = -1, tRaton = null;
+  var MINIS = /*MINIS*/;
+
+  function texto(el) {
+    if (!el) return "";
+    var tmp = document.createElement("div");
+    tmp.innerHTML = el.innerHTML.replace(/<br\s*\/?>/gi, " ");
+    return tmp.textContent.replace(/\s+/g, " ").trim();
+  }
+  // Si la slide no usa una clase de título conocida, toma el texto más grande que no sea el kicker
+  function tituloMayor(s, kick) {
+    var mejor = null, tam = 0;
+    s.querySelectorAll("div, h1, h2, h3, p, span, b, strong").forEach(function (el) {
+      if (el.closest(".kicker") || el.children.length > 2) return;
+      var t = texto(el);
+      if (!t || t.length > 80 || t.toUpperCase() === kick.toUpperCase()) return;
+      var f = parseFloat(getComputedStyle(el).fontSize) || 0;
+      if (f > tam) { tam = f; mejor = t; }
+    });
+    return mejor;
+  }
+  function slides() { return Array.prototype.slice.call(document.querySelectorAll("#deck > .slide")); }
+
+  // Miniatura de una slide: la imagen generada si existe; si no (o con vivo = true), una copia congelada
+  // en su estado final. Los canvas se copian reducidos para no gastar memoria.
+  function miniatura(s, vivo) {
+    var caja = document.createElement("div");
+    caja.className = "deck-mini";
+    if (MINIS[s.id] && !vivo) {
+      var img = document.createElement("img");
+      img.alt = "";
+      img.loading = "lazy";
+      img.src = MINIS[s.id];
+      caja.appendChild(img);
+      return caja;
+    }
+    var copia = s.cloneNode(true);
+    copia.classList.add("is-active");
+    copia.removeAttribute("data-auto");
+    var origen = s.querySelectorAll("canvas"), destino = copia.querySelectorAll("canvas");
+    for (var i = 0; i < destino.length; i++) {
+      var w = Math.max(1, Math.round(origen[i].width / 5)), h = Math.max(1, Math.round(origen[i].height / 5));
+      destino[i].width = w;
+      destino[i].height = h;
+      try { destino[i].getContext("2d").drawImage(origen[i], 0, 0, w, h); }
+      catch (err) { /* un canvas sin dibujar queda vacio en la miniatura */ }
+    }
+    var escala = document.createElement("div");
+    escala.className = "deck-mini-escala";
+    escala.appendChild(copia);
+    caja.appendChild(escala);
+    function ajustar() { if (caja.clientWidth) escala.style.transform = "scale(" + caja.clientWidth / 1920 + ")"; }
+    if (window.ResizeObserver) new ResizeObserver(ajustar).observe(caja);
+    setTimeout(ajustar, 0);
+    return caja;
+  }
+  window.DeckMini = miniatura;
+
+  function armar() {
+    cuerpo.innerHTML = "";
+    tarjetas = [];
+    var lista = slides(), rej = null, grupo = "Inicio";
+    function nuevoGrupo(nombre) {
+      var h = document.createElement("h3"); h.textContent = nombre; cuerpo.appendChild(h);
+      rej = document.createElement("div"); rej.className = "gal-rej"; cuerpo.appendChild(rej);
+    }
+    nuevoGrupo(grupo);
+    lista.forEach(function (s, i) {
+      var kick = texto(s.querySelector(".kicker"));
+      var tit = s.querySelector(".h-xl, .h-l, .h-m, .h-s, h1, h2, .ttl, [class*='title'], [class*='titulo']");
+      var titulo = texto(tit);
+      if (!titulo || titulo.toUpperCase() === kick.toUpperCase()) titulo = tituloMayor(s, kick) || kick;
+      var esTrans = s.classList.contains("interstitial");
+      // Una slide cuyo kicker empieza con "Parte 2", "Sección 3", "Módulo 1"... abre un grupo en la galería
+      if (/^(PARTE|SECCI[OÓ]N|M[OÓ]DULO|BLOQUE|CAP[IÍ]TULO|PARADA)\s+\d/i.test(kick)) nuevoGrupo(kick + ": " + titulo);
+      var c = document.createElement("button");
+      c.type = "button";
+      c.className = "gal-c" + (s.classList.contains("es-practica") ? " prac" : "") + (esTrans ? " trans" : "");
+      c.innerHTML = "<em></em><small></small><strong></strong>";
+      c.insertBefore(miniatura(s, false), c.firstChild);
+      c.querySelector(":scope > em").textContent = String(i + 1);
+      c.querySelector(":scope > small").textContent = esTrans ? "Transición" : kick;
+      c.querySelector(":scope > strong").textContent = esTrans ? "Animación sin texto" : titulo;
+      c.dataset.buscar = ((i + 1) + " " + kick + " " + titulo).toLowerCase();
+      c.addEventListener("click", function () { ir(i); });
+      rej.appendChild(c);
+      tarjetas.push({ el: c, i: i, s: s });
+    });
+  }
+
+  function visibles() { return tarjetas.filter(function (t) { return t.el.style.display !== "none"; }); }
+  function marcarFoco(n) {
+    var v = visibles();
+    tarjetas.forEach(function (t) { t.el.classList.remove("foco"); });
+    if (!v.length) { foco = -1; return; }
+    foco = Math.max(0, Math.min(v.length - 1, n));
+    v[foco].el.classList.add("foco");
+    v[foco].el.scrollIntoView({ block: "nearest" });
+  }
+  function abrir() {
+    if (!tarjetas.length) armar();
+    var activa = slides().findIndex(function (s) { return s.classList.contains("is-active"); });
+    tarjetas.forEach(function (t) { t.el.classList.toggle("actual", t.i === activa); t.el.style.display = ""; });
+    buscar.value = "";
+    gal.classList.add("abierta");
+    var v = visibles(), k = v.findIndex(function (t) { return t.i === activa; });
+    marcarFoco(k < 0 ? 0 : k);
+    buscar.focus();
+  }
+  function cerrarGal() { gal.classList.remove("abierta"); buscar.blur(); }
+  function ir(i) { cerrarGal(); if (window.Deck && Deck.go) Deck.go(i); }
+
+  buscar.addEventListener("input", function () {
+    var q = buscar.value.toLowerCase().trim();
+    tarjetas.forEach(function (t) { t.el.style.display = !q || t.el.dataset.buscar.indexOf(q) >= 0 ? "" : "none"; });
+    cuerpo.querySelectorAll(".gal-rej").forEach(function (r) {
+      var algo = Array.prototype.some.call(r.children, function (c) { return c.style.display !== "none"; });
+      r.style.display = algo ? "" : "none"; r.previousSibling.style.display = algo ? "" : "none";
+    });
+    marcarFoco(0);
+  });
+  btn.addEventListener("click", function (e) { e.stopPropagation(); abrir(); });
+  gal.addEventListener("click", function (e) { e.stopPropagation(); });
+  cerrar.addEventListener("click", cerrarGal);
+
+  window.addEventListener("keydown", function (e) {
+    if (gal.classList.contains("abierta")) {
+      var cols = Math.max(1, Math.floor(cuerpo.clientWidth / 312));
+      if (e.key === "Escape") cerrarGal();
+      else if (e.key === "Enter") { var v = visibles(); if (v[foco]) ir(v[foco].i); }
+      else if (e.key === "ArrowRight") marcarFoco(foco + 1);
+      else if (e.key === "ArrowLeft") marcarFoco(foco - 1);
+      else if (e.key === "ArrowDown") marcarFoco(foco + cols);
+      else if (e.key === "ArrowUp") marcarFoco(foco - cols);
+      else { e.stopImmediatePropagation(); return; }
+      e.preventDefault(); e.stopImmediatePropagation();
+      return;
+    }
+    if (e.target.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName)) return;
+    if ((e.key === "g" || e.key === "G") && !e.ctrlKey && !e.metaKey && !e.altKey) {
+      e.preventDefault(); e.stopImmediatePropagation(); abrir();
+    }
+  }, true);
+
+  window.addEventListener("mousemove", function () {
+    document.body.classList.add("gal-raton");
+    clearTimeout(tRaton);
+    tRaton = setTimeout(function () { document.body.classList.remove("gal-raton"); }, 2500);
+  });
+})();
+</script>
+</body>
+</html>

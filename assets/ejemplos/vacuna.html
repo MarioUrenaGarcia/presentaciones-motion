@@ -1,0 +1,514 @@
+<style>
+/* ===== entrenamiento: la vacuna entrena a las defensas en cuatro estados discretos ===== */
+#entrenamiento .titulo { position: absolute; left: 140px; top: 156px; width: 700px; font-size: 84px; line-height: 1.04; }
+#entrenamiento .paso { position: absolute; right: 120px; top: 98px; }
+#entrenamiento .paso b { color: var(--ink); font-weight: 600; }
+#entrenamiento .ilus { position: absolute; left: 880px; top: 960px; }
+
+/* Lista de pasos: aparece una línea por paso; la actual en tinta, las anteriores atenuadas */
+#entrenamiento .pasos { position: absolute; left: 140px; top: 446px; width: 660px; height: 470px; }
+#entrenamiento .riel { position: absolute; left: 11px; top: 22px; width: 3px; height: 360px; background: var(--dim); transform: scaleY(0); transform-origin: 50% 0; transition: transform .6s var(--ease); }
+#entrenamiento .pi { position: absolute; left: 0; width: 660px; opacity: 0; transform: translateY(14px); transition: opacity .3s ease, transform .45s var(--out); }
+#entrenamiento .pi i { position: absolute; left: 0; top: 10px; width: 25px; height: 25px; box-sizing: border-box; border: 3px solid var(--dim); border-radius: 50%; background: var(--ground); transition: background-color .3s ease, border-color .3s ease; }
+#entrenamiento .pi span { display: block; margin-left: 58px; font: 400 34px/1.24 var(--body); color: var(--muted); text-wrap: pretty; transition: color .3s ease; }
+#entrenamiento .pi.vis { opacity: 1; transform: none; }
+#entrenamiento .pi.on i { background: var(--ink); border-color: var(--ink); }
+#entrenamiento .pi.on span { color: var(--ink); }
+#entrenamiento.entra .pi { transition-delay: .5s; }
+
+/* Escena: cada actor es un grupo SVG con su estado por paso; el grupo .bob interior flota en loop */
+#entrenamiento .escena { position: absolute; left: 770px; top: 120px; overflow: visible; }
+#entrenamiento .act { transform-origin: 0 0; transition: transform .95s var(--ease) var(--td, 0s), opacity .45s ease var(--td, 0s); }
+#entrenamiento.rev .act { transition-duration: .55s, .3s; }
+#entrenamiento.now .act, #entrenamiento.now .pi, #entrenamiento.now .pi i, #entrenamiento.now .pi span,
+#entrenamiento.now .riel, #entrenamiento.now .lleno { transition: none !important; }
+#entrenamiento.is-active .bob { animation: entrenamiento-flota var(--bt, 4s) ease-in-out var(--bd, 0s) infinite alternate; }
+/* Ya unidos al virus, los anticuerpos flotan con él al mismo compás */
+#entrenamiento.p4 .ab .bob { --bt: 3.4s; --bd: 0s; }
+
+#entrenamiento .k { fill: none; stroke: var(--ink); stroke-width: 4; stroke-linecap: round; stroke-linejoin: round; }
+#entrenamiento .pf { fill: var(--panel); }
+#entrenamiento .tapa { fill: var(--ink); }
+#entrenamiento .kd { fill: none; stroke: var(--dim); stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+#entrenamiento .kg { fill: none; stroke: var(--dim); stroke-width: 3; stroke-dasharray: 7 9; stroke-linecap: round; }
+#entrenamiento .nuc { fill: var(--line); stroke: var(--dim); stroke-width: 3; }
+#entrenamiento .liq { fill: var(--line); }
+#entrenamiento .estela { fill: none; stroke: var(--dim); stroke-width: 4; stroke-linecap: round; stroke-dasharray: 1 14; }
+#entrenamiento .orbita { fill: none; stroke: var(--dim); stroke-width: 3; stroke-linecap: round; stroke-dasharray: 3 15; }
+/* Pieza del virus (el único acento): borde grueso debajo y relleno encima dibujan el contorno de la unión */
+#entrenamiento .tb-b { fill: var(--ink); stroke: var(--ink); stroke-width: 6; }
+#entrenamiento .tb-f { fill: var(--accent); }
+#entrenamiento .mini .tb-b { stroke-width: 9; }
+#entrenamiento .hueco .tb-b { fill: var(--accent); stroke: var(--accent); }
+#entrenamiento .hueco .tb-f { fill: var(--panel); }
+#entrenamiento .lleno { opacity: 0; transition: opacity .4s ease .5s; }
+#entrenamiento.p4 .lleno { opacity: 1; }
+#entrenamiento.rev .lleno { transition-delay: 0s; }
+#entrenamiento .gira, #entrenamiento .late { transform-box: fill-box; transform-origin: center; }
+#entrenamiento.is-active .gira { animation: entrenamiento-gira 40s linear infinite; }
+#entrenamiento.is-active .late { animation: entrenamiento-late 3s ease-in-out var(--bd, 0s) infinite; }
+
+@keyframes entrenamiento-flota { from { transform: translateY(-6px); } to { transform: translateY(6px); } }
+@keyframes entrenamiento-gira { to { transform: rotate(360deg); } }
+@keyframes entrenamiento-late { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.045); } }
+
+/* ===== respuesta: dos curvas sobre el mismo eje de tiempo ===== */
+#respuesta .titulo { position: absolute; left: 140px; top: 150px; width: 1320px; }
+#respuesta .ilus { position: absolute; right: 120px; top: 98px; }
+#respuesta .graf { position: absolute; left: 140px; top: 372px; overflow: visible; }
+#respuesta .eje { fill: none; stroke: var(--ink); stroke-width: 4; stroke-linecap: round; stroke-linejoin: round; }
+#respuesta .curva { fill: none; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 1 1; }
+#respuesta .c1 { stroke: var(--ink); stroke-width: 4; }
+#respuesta .c2 { stroke: var(--accent); stroke-width: 6; }
+#respuesta .a1 { fill: color-mix(in srgb, var(--ink) 5%, transparent); }
+#respuesta .a2 { fill: color-mix(in srgb, var(--accent) 12%, transparent); }
+#respuesta .guia { fill: none; stroke: var(--dim); stroke-width: 3; stroke-linecap: round; stroke-dasharray: 2 10; }
+#respuesta .flecha { fill: none; stroke: var(--ink); stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 1 1; }
+#respuesta .punto circle { fill: var(--accent); stroke: var(--ground); stroke-width: 4; }
+#respuesta .punto { opacity: 0; }
+#respuesta .eje-y { position: absolute; left: 258px; top: 394px; }
+#respuesta .eje-x { position: absolute; left: 1620px; top: 892px; }
+#respuesta .eje-0 { position: absolute; left: 196px; top: 892px; }
+#respuesta .rot { position: absolute; width: 300px; text-align: center; font: 500 32px/1 var(--body); white-space: nowrap; }
+#respuesta .rot-1 { left: 896px; top: 682px; color: var(--muted); }
+#respuesta .rot-2 { left: 479px; top: 418px; color: var(--ink); font-weight: 600; }
+#respuesta.is-active .ex, #respuesta.is-active .ey { animation: respuesta-traza .7s var(--ease) .15s both; }
+#respuesta.is-active .c1 { animation: respuesta-traza 1.4s cubic-bezier(.45, 0, .55, 1) .5s both; }
+#respuesta.is-active .c2 { animation: respuesta-traza .7s var(--ease) 1.5s both; }
+#respuesta.is-active .a1 { animation: respuesta-aparece .5s ease 1.7s both; }
+#respuesta.is-active .a2 { animation: respuesta-aparece .5s ease 2.1s both; }
+#respuesta.is-active .guia { animation: respuesta-aparece .4s ease 2.2s both; }
+#respuesta.is-active .flecha { animation: respuesta-traza .55s var(--ease) 2.3s both; }
+
+@keyframes respuesta-traza { 0% { stroke-dashoffset: 1; opacity: 0; } 2% { opacity: 1; } 100% { stroke-dashoffset: 0; opacity: 1; } }
+@keyframes respuesta-aparece { from { opacity: 0; } to { opacity: 1; } }
+
+/* ===== i-celulas: células que flotan, se dividen y se acomodan en una rejilla suelta ===== */
+#i-celulas .lienzo { position: absolute; left: 0; top: 0; }
+#i-celulas .bo { fill: var(--ink); stroke: var(--ink); stroke-width: 8; }
+#i-celulas .re { fill: var(--panel); }
+#i-celulas .nu { fill: var(--line); stroke: var(--dim); stroke-width: 3; }
+#i-celulas .nu.acc { fill: var(--accent); stroke: var(--bar); }
+#i-celulas .sl { fill: none; stroke: var(--dim); stroke-width: 3; stroke-linecap: round; stroke-dasharray: 2 12; }
+</style>
+
+<section class="slide" id="entrenamiento">
+  <div class="kicker in-left">Salud</div>
+  <div class="tag paso fade" style="--d:.3s">PASO <b>01</b> / 04</div>
+  <div class="h-m titulo in-up" style="--d:.05s">Cómo una vacuna entrena al cuerpo</div>
+  <div class="pasos">
+    <div class="riel"></div>
+    <div class="pi" style="top:0"><i></i><span>La vacuna muestra una pieza inofensiva del virus.</span></div>
+    <div class="pi" style="top:120px"><i></i><span>Las defensas la reconocen y fabrican anticuerpos.</span></div>
+    <div class="pi" style="top:240px"><i></i><span>Quedan células de memoria que guardan su forma.</span></div>
+    <div class="pi" style="top:360px"><i></i><span>Si llega el virus real, lo rodean de inmediato.</span></div>
+  </div>
+  <svg class="escena" width="1053" height="896" viewBox="0 0 940 800" aria-hidden="true"></svg>
+  <div class="tag ilus fade" style="--d:.5s">ILUSTRACIÓN</div>
+</section>
+
+<section class="slide" id="respuesta">
+  <div class="kicker in-left">Memoria inmune</div>
+  <div class="tag ilus fade" style="--d:.3s">ILUSTRACIÓN</div>
+  <div class="h-m titulo in-up" style="--d:.05s">La segunda vez,<br>el cuerpo responde <span class="accent">antes</span></div>
+  <svg class="graf" width="1660" height="588" viewBox="0 0 1660 588" aria-hidden="true">
+    <path class="a1" d=""/>
+    <path class="a2" d=""/>
+    <path class="guia g1" d=""/>
+    <path class="guia g2" d=""/>
+    <path class="eje ey" pathLength="1" d="M100 500 V30 M89 46 L100 30 L111 46"/>
+    <path class="eje ex" pathLength="1" d="M100 500 H1600 M1584 489 L1600 500 L1584 511"/>
+    <path class="curva c1" pathLength="1" d=""/>
+    <path class="curva c2" pathLength="1" d=""/>
+    <path class="flecha" pathLength="1" d=""/>
+    <g class="punto"><circle r="11"/></g>
+  </svg>
+  <div class="tag eje-y fade" style="--d:.5s">RESPUESTA</div>
+  <div class="tag eje-x fade" style="--d:.6s">TIEMPO</div>
+  <div class="tag eje-0 fade" style="--d:.6s">CONTACTO</div>
+  <div class="rot rot-1 fade" style="--d:1.7s">Primera vez</div>
+  <div class="rot rot-2 fade" style="--d:2.1s">Segunda vez</div>
+</section>
+
+<section class="slide interstitial" id="i-celulas" data-auto="2.6">
+  <svg class="lienzo" width="1920" height="1080" viewBox="0 0 1920 1080" aria-hidden="true">
+    <g class="slots"></g>
+    <g class="bordes"></g>
+    <g class="rellenos"></g>
+    <g class="nucleos"></g>
+  </svg>
+</section>
+
+<script>
+(function () {
+  "use strict";
+  var NS = "http://www.w3.org/2000/svg";
+  var RAD = Math.PI / 180;
+  function n1(v) { return Math.round(v * 10) / 10; }
+
+  /* ---------- entrenamiento ---------- */
+  var S = document.getElementById("entrenamiento");
+  var SC = S.querySelector(".escena");
+
+  // Pieza del virus: tres lóbulos; el borde grueso va debajo y el relleno encima para que no se vean costuras
+  var LOB = [[-12, 6], [12, 6], [0, -14]];
+  function trebol(cls) {
+    var b = "", f = "";
+    for (var i = 0; i < LOB.length; i++) {
+      b += '<circle class="tb-b" cx="' + LOB[i][0] + '" cy="' + LOB[i][1] + '" r="13"/>';
+      f += '<circle class="tb-f" cx="' + LOB[i][0] + '" cy="' + LOB[i][1] + '" r="13"/>';
+    }
+    return '<g class="' + (cls || "") + '">' + b + f + "</g>";
+  }
+  // Anticuerpo: una Y con el cruce en el origen y los brazos hacia arriba
+  var YY = '<path class="k" d="M0 34 V0 M0 0 L-19 -24 M0 0 L19 -24"/>';
+  var PIEZA = trebol("");
+
+  function virus(fantasma) {
+    var s = "";
+    for (var k = 0; k < 8; k++) {
+      // Al fantasma le falta justo la pieza que lleva la vacuna
+      if (fantasma && k === 4) continue;
+      var a = k * 45, c = Math.cos(a * RAD), sn = Math.sin(a * RAD);
+      s += '<path class="' + (fantasma ? "kg" : "k") + '" d="M' + n1(72 * c) + " " + n1(72 * sn) + " L" + n1(90 * c) + " " + n1(90 * sn) + '"/>';
+      if (fantasma) s += '<circle class="kg" cx="' + n1(104 * c) + '" cy="' + n1(104 * sn) + '" r="13"/>';
+      else s += '<g transform="translate(' + n1(104 * c) + " " + n1(104 * sn) + ") rotate(" + (a + 90) + ') scale(.62)">' + trebol("mini") + "</g>";
+    }
+    s += '<circle class="' + (fantasma ? "kg" : "k pf") + '" r="72"/>';
+    s += '<path class="kd" d="M-36 -4 C-24 -26 -8 14 6 -8 S30 2 38 -16"/>';
+    s += '<circle class="nuc" cx="-14" cy="26" r="7"/><circle class="nuc" cx="18" cy="22" r="5"/>';
+    return s;
+  }
+
+  function celula() {
+    var s = "", R = 130, ang = [180, 240, 300, 0, 60, 120];
+    // Receptores en la membrana: la base de cada Y toca el borde y los brazos miran hacia afuera
+    for (var i = 0; i < ang.length; i++) {
+      var a = ang[i], f = R + 27;
+      s += '<g transform="translate(' + n1(f * Math.cos(a * RAD)) + " " + n1(f * Math.sin(a * RAD)) + ") rotate(" + (a + 90) + ') scale(.8)">' + YY + "</g>";
+    }
+    s += '<circle class="k pf" r="' + R + '"/>';
+    s += '<circle class="nuc" cx="-12" cy="12" r="50"/>';
+    s += '<circle class="nuc" cx="62" cy="-48" r="8"/><circle class="nuc" cx="70" cy="40" r="6"/><circle class="nuc" cx="-60" cy="-62" r="6"/>';
+    return s;
+  }
+
+  function memoria() {
+    return '<g class="late"><circle class="k pf" r="64"/><circle class="kd" r="50" stroke-dasharray="5 9"/>' +
+      '<g transform="translate(0 4) scale(1.2)">' + trebol("hueco") + trebol("lleno") + "</g></g>";
+  }
+
+  var FRASCO =
+    '<rect class="k tapa" x="-26" y="-122" width="52" height="28" rx="7"/>' +
+    '<path class="k" d="M-18 -94 V-82 M18 -94 V-82"/>' +
+    '<path class="liq" d="M-46 -14 H46 V72 Q46 96 22 96 H-22 Q-46 96 -46 72 Z"/>' +
+    '<path class="kd" d="M-46 -14 H46"/>' +
+    '<g transform="translate(-18 26) scale(.42)">' + trebol("mini") + "</g>" +
+    '<g transform="translate(17 50) scale(.42)">' + trebol("mini") + "</g>" +
+    '<g transform="translate(-10 76) scale(.42)">' + trebol("mini") + "</g>" +
+    '<rect class="k" x="-50" y="-82" width="100" height="182" rx="28"/>' +
+    '<path class="kd" d="M-50 -56 H50"/>';
+
+  var ESTELA = '<path class="estela" d="M168 282 C235 170 355 190 400 342"/>';
+  var ORBITA = '<g class="gira"><circle class="orbita" r="200"/></g>';
+
+  var CEL = [620, 400], VIR = [330, 400];
+  // Células de memoria: al centro cuando aparecen; a un lado cuando llega el virus
+  var MEM3 = [[450, 250], [660, 400], [450, 550]];
+  var MEM = [[730, 190], [835, 410], [730, 630]];
+  var A2 = [-140, -100, -60, -20, 20, 60, 100, 140];
+  function e(x, y, s, o, r, d) { return { x: x, y: y, s: s, o: o, r: r || 0, d: d || 0 }; }
+
+  var ACT = [];
+  function actor(cls, markup, bt, bd, st) {
+    var g = document.createElementNS(NS, "g");
+    g.setAttribute("class", "act " + cls);
+    g.style.setProperty("--bt", bt + "s");
+    g.style.setProperty("--bd", bd + "s");
+    var b = document.createElementNS(NS, "g");
+    b.setAttribute("class", "bob");
+    b.innerHTML = markup;
+    g.appendChild(b);
+    SC.appendChild(g);
+    // Cada estado es un objeto propio para poder ajustar su giro sin tocar a los demás actores
+    st = st.map(function (x) { return e(x.x, x.y, x.s, x.o, x.r, x.d); });
+    // Giro por el camino corto entre un paso y el siguiente
+    for (var k = 1; k < st.length; k++) {
+      while (st[k].r - st[k - 1].r > 180) st[k].r -= 360;
+      while (st[k].r - st[k - 1].r < -180) st[k].r += 360;
+    }
+    ACT.push({ el: g, st: st });
+  }
+
+  // Estados: 0 es antes de entrar; 1 a 4 son los pasos. Orden de capas: lo primero queda al fondo
+  var OCULTO_V = e(VIR[0], VIR[1], .8, 0);
+  actor("ani", ORBITA, 3.4, 0, [OCULTO_V, OCULTO_V, OCULTO_V, OCULTO_V, e(VIR[0], VIR[1], 1, 1, 0, 1.3)]);
+  var LEJOS = e(70, 400, .7, 0, -50);
+  actor("vir", virus(false), 3.4, 0, [LEJOS, LEJOS, LEJOS, LEJOS, e(VIR[0], VIR[1], 1, 1, 0, 0)]);
+  for (var i = 0; i < 8; i++) {
+    var a2 = A2[i], a4 = i * 45, m = MEM3[i % 3];
+    // Unido al virus, el cruce de la Y queda justo fuera de la espiga y los brazos la abrazan sin tocarla
+    actor("ab", YY, 2.8 + (i % 3) * .5, -i * .45, [
+      e(CEL[0], CEL[1], .35, 0, a2 + 90),
+      e(CEL[0], CEL[1], .35, 0, a2 + 90),
+      e(n1(CEL[0] + 245 * Math.cos(a2 * RAD)), n1(CEL[1] + 245 * Math.sin(a2 * RAD)), 1, 1, a2 + 90, .85 + i * .09),
+      e(m[0], m[1], .3, 0, a2 + 90, i * .04),
+      e(n1(VIR[0] + 133 * Math.cos(a4 * RAD)), n1(VIR[1] + 133 * Math.sin(a4 * RAD)), 1.15, 1, a4 - 90, .4 + i * .05)
+    ]);
+  }
+  for (var q = 0; q < 3; q++) {
+    var dentro = e(CEL[0], CEL[1], .4, 0);
+    actor("mem", memoria(), 4 + q * .4, -q * 1.3, [dentro, dentro, dentro,
+      e(MEM3[q][0], MEM3[q][1], 1, 1, 0, .45 + q * .15), e(MEM[q][0], MEM[q][1], 1, 1)]);
+  }
+  actor("cel", celula(), 4.6, -1.5, [e(CEL[0], CEL[1], .6, 0), e(CEL[0], CEL[1], .6, 0),
+    e(CEL[0], CEL[1], 1, 1, 0, .05), e(CEL[0], CEL[1], .5, 0, 0, .1), e(CEL[0], CEL[1], .5, 0)]);
+  actor("est", ESTELA, 60, 0, [e(0, 0, 1, 0), e(0, 0, 1, 1, 0, .55), e(0, 0, 1, 0), e(0, 0, 1, 0), e(0, 0, 1, 0)]);
+  actor("fra", FRASCO, 4.2, -1, [e(120, 460, 1.15, 0), e(120, 430, 1.3, 1, 0, .15), e(120, 430, 1.3, .3),
+    e(120, 430, 1.15, 0), e(120, 430, 1.15, 0)]);
+  var FAN = e(745, 300, 1, 0);
+  actor("fan", virus(true), 5, -2, [FAN, e(745, 300, 1.15, 1, 0, 1), FAN, FAN, FAN]);
+  actor("pza", PIEZA, 3.6, -.6, [e(120, 360, .4, 0), e(455, 420, 2.1, 1, 0, .45), e(430, 400, 1, 1, 90, .35),
+    e(560, 400, .6, 0, 90), e(560, 400, .6, 0, 90)]);
+
+  var filas = S.querySelectorAll(".pi");
+  var riel = S.querySelector(".riel");
+  var num = S.querySelector(".paso b");
+  var paso = 1;
+  var pendiente = false;
+
+  function poner(a, k, animar) {
+    var x = a.st[k];
+    a.el.style.transform = "translate(" + x.x + "px, " + x.y + "px) rotate(" + x.r + "deg) scale(" + x.s + ")";
+    a.el.style.opacity = x.o;
+    a.el.style.setProperty("--td", (animar ? x.d : 0) + "s");
+  }
+
+  function estado0() {
+    for (var k = 0; k < ACT.length; k++) poner(ACT[k], 0, false);
+    for (var f = 0; f < filas.length; f++) filas[f].classList.remove("vis", "on");
+    riel.style.transform = "scaleY(0)";
+    for (var p = 1; p <= 4; p++) S.classList.remove("p" + p);
+  }
+
+  function aplicar(n, animar) {
+    paso = n;
+    S.classList.toggle("rev", !animar);
+    for (var p = 1; p <= 4; p++) S.classList.toggle("p" + p, n >= p);
+    num.textContent = "0" + n;
+    for (var f = 0; f < filas.length; f++) {
+      filas[f].classList.toggle("vis", f < n);
+      filas[f].classList.toggle("on", f === n - 1);
+    }
+    riel.style.transform = "scaleY(" + ((n - 1) / 3).toFixed(3) + ")";
+    for (var k = 0; k < ACT.length; k++) poner(ACT[k], n, animar);
+  }
+
+  // Estado completo de partida, para miniaturas y copias congeladas
+  aplicar(4, false);
+
+  Deck.on("entrenamiento", {
+    enter: function (s, dir) {
+      var atras = dir === -1;
+      S.classList.add("now");
+      S.classList.remove("entra");
+      if (atras) aplicar(4, false);
+      else { estado0(); paso = 1; num.textContent = "01"; }
+      void S.offsetWidth;
+      S.classList.remove("now");
+      if (!atras) {
+        // La escena se arma un instante después de entrar, cuando la slide ya es visible
+        pendiente = true;
+        S.classList.add("entra");
+        Deck.after(s, 40, function () {
+          if (!pendiente) return;
+          pendiente = false;
+          aplicar(1, true);
+        });
+      }
+    },
+    leave: function () { pendiente = false; },
+    next: function () {
+      if (paso >= 4) return false;
+      pendiente = false;
+      S.classList.remove("entra");
+      aplicar(paso + 1, true);
+      return true;
+    },
+    prev: function () {
+      if (paso <= 1) return false;
+      pendiente = false;
+      S.classList.remove("entra");
+      aplicar(paso - 1, false);
+      return true;
+    }
+  });
+})();
+
+(function () {
+  "use strict";
+  /* ---------- respuesta ---------- */
+  var S = document.getElementById("respuesta");
+  var X0 = 100, AX = 1440, Y0 = 500, AY = 440;
+  // Curva de respuesta: sube y baja con forma log-normal, con subida y bajada de distinto ancho
+  function curva(h, tp, sr, sf) {
+    return function (t) {
+      if (t <= 0) return 0;
+      var l = Math.log(t / tp), s = l < 0 ? sr : sf;
+      return h * Math.exp(-(l * l) / (2 * s * s));
+    };
+  }
+  var P1 = { f: curva(.3, .56, .26, .5), tp: .56, h: .3 };
+  var P2 = { f: curva(.9, .27, .32, .75), tp: .27, h: .9 };
+  function px(t) { return X0 + t * AX; }
+  function py(v) { return Y0 - v * AY; }
+  function trazo(f) {
+    var d = "";
+    for (var i = 0; i <= 240; i++) {
+      var t = i / 240;
+      d += (i ? " L" : "M") + px(t).toFixed(1) + " " + py(f(t)).toFixed(1);
+    }
+    return d;
+  }
+  function q(sel) { return S.querySelector(sel); }
+  var d1 = trazo(P1.f), d2 = trazo(P2.f);
+  var cierre = " L" + px(1).toFixed(1) + " " + Y0 + " L" + X0 + " " + Y0 + " Z";
+  q(".c1").setAttribute("d", d1);
+  q(".c2").setAttribute("d", d2);
+  q(".a1").setAttribute("d", d1 + cierre);
+  q(".a2").setAttribute("d", d2 + cierre);
+  var x1 = px(P1.tp), x2 = px(P2.tp), yf = Y0 + 42;
+  q(".g1").setAttribute("d", "M" + x1 + " " + (py(P1.h) + 14) + " V" + (yf + 12));
+  q(".g2").setAttribute("d", "M" + x2 + " " + (py(P2.h) + 16) + " V" + (yf + 12));
+  // Flecha bajo el eje: del pico de la primera vez al de la segunda, hacia atrás en el tiempo
+  q(".flecha").setAttribute("d", "M" + (x1 - 10) + " " + yf + " H" + (x2 + 10) + " M" + (x2 + 26) + " " + (yf - 11) + " L" + (x2 + 10) + " " + yf + " L" + (x2 + 26) + " " + (yf + 11));
+
+  var punto = q(".punto");
+  var VUELTA = 4.2;
+  Deck.on("respuesta", {
+    enter: function (s) {
+      punto.style.opacity = 0;
+      Deck.loop(s, function (t) {
+        var u = t - 2.5;
+        if (u < 0) return;
+        var k = (u % VUELTA) / VUELTA;
+        punto.setAttribute("transform", "translate(" + px(k).toFixed(1) + " " + py(P2.f(k)).toFixed(1) + ")");
+        punto.style.opacity = k < .05 ? k / .05 : (k > .9 ? (1 - k) / .1 : 1);
+      });
+    }
+  });
+})();
+
+(function () {
+  "use strict";
+  /* ---------- i-celulas ---------- */
+  var NS = "http://www.w3.org/2000/svg";
+  var S = document.getElementById("i-celulas");
+  var G = {
+    slots: S.querySelector(".slots"),
+    bordes: S.querySelector(".bordes"),
+    rellenos: S.querySelector(".rellenos"),
+    nucleos: S.querySelector(".nucleos")
+  };
+  var R = Deck.rand(1207);
+  var RD = 52, RP = 72, CICLO = 6, ACENTO = 4;
+
+  function circ(capa, cls, r) {
+    var c = document.createElementNS(NS, "circle");
+    c.setAttribute("class", cls);
+    c.setAttribute("r", r);
+    capa.appendChild(c);
+    return c;
+  }
+
+  // Rejilla suelta de destino: 6 x 4 con un poco de desorden
+  var obj = [];
+  for (var f = 0; f < 4; f++) {
+    for (var c = 0; c < 6; c++) obj.push([300 + c * 264 + (R() - .5) * 44, 228 + f * 208 + (R() - .5) * 40]);
+  }
+  // Cada madre se parte en dos hijas que van a dos casillas vecinas
+  var madres = [];
+  for (f = 0; f < 4; f++) {
+    for (var p = 0; p < 3; p++) {
+      var a = obj[f * 6 + p * 2], b = obj[f * 6 + p * 2 + 1];
+      madres.push({
+        x: (a[0] + b[0]) / 2 + (R() - .5) * 240,
+        y: (a[1] + b[1]) / 2 + (R() - .5) * 150,
+        eje: Math.atan2(b[1] - a[1], b[0] - a[0]) + (R() - .5) * 1.2,
+        hijas: [a, b],
+        fa: R() * 6.28,
+        fb: R() * 6.28
+      });
+    }
+  }
+  // Separa las madres que quedaron encimadas y las mantiene dentro del cuadro
+  for (var it = 0; it < 40; it++) {
+    for (var i = 0; i < madres.length; i++) {
+      for (var j = i + 1; j < madres.length; j++) {
+        var dx = madres[j].x - madres[i].x, dy = madres[j].y - madres[i].y, dd = Math.sqrt(dx * dx + dy * dy) || 1;
+        if (dd < 180) {
+          var k = (180 - dd) / 2 / dd;
+          madres[i].x -= dx * k; madres[i].y -= dy * k;
+          madres[j].x += dx * k; madres[j].y += dy * k;
+        }
+      }
+    }
+    for (i = 0; i < madres.length; i++) {
+      madres[i].x = Math.min(1740, Math.max(180, madres[i].x));
+      madres[i].y = Math.min(900, Math.max(170, madres[i].y));
+    }
+  }
+
+  for (i = 0; i < obj.length; i++) {
+    var sl = circ(G.slots, "sl", RD + 12);
+    sl.setAttribute("cx", obj[i][0].toFixed(1));
+    sl.setAttribute("cy", obj[i][1].toFixed(1));
+  }
+  var celdas = [];
+  for (i = 0; i < madres.length; i++) {
+    for (var h = 0; h < 2; h++) {
+      celdas.push({
+        m: madres[i], h: h,
+        bo: circ(G.bordes, "bo", RP),
+        re: circ(G.rellenos, "re", RP),
+        nu: circ(G.nucleos, i === ACENTO ? "nu acc" : "nu", RP * .36)
+      });
+    }
+  }
+
+  function suave(x) { x = x < 0 ? 0 : (x > 1 ? 1 : x); return x * x * (3 - 2 * x); }
+  function pos(el, x, y, r) {
+    el.setAttribute("cx", x.toFixed(1));
+    el.setAttribute("cy", y.toFixed(1));
+    el.setAttribute("r", r.toFixed(1));
+  }
+
+  // Ciclo: flotan, se dividen, se acomodan, respiran y regresan para repetir sin salto
+  function frame(t) {
+    var u = t % CICLO;
+    var d = u < 5 ? suave((u - .3) / .75) : 1 - suave((u - 5.35) / .6);
+    var m = u < 5 ? suave((u - .95) / 1.2) : 1 - suave((u - 5) / .6);
+    G.slots.setAttribute("opacity", (m * .9).toFixed(3));
+    var r0 = RP + (RD - RP) * d, sep = d * (RD + 12), amp = 1 - .7 * m;
+    for (var i = 0; i < celdas.length; i++) {
+      var C = celdas[i], M = C.m, s = C.h ? 1 : -1;
+      var fx = Math.sin(t * .8 + M.fa) * 12 * amp, fy = Math.cos(t * .65 + M.fb) * 10 * amp;
+      var x1 = M.x + s * sep * Math.cos(M.eje), y1 = M.y + s * sep * Math.sin(M.eje);
+      var T = M.hijas[C.h];
+      var x = x1 + (T[0] - x1) * m + fx, y = y1 + (T[1] - y1) * m + fy;
+      var r = r0 * (1 + .03 * Math.sin(t * 2.2 + i) * m);
+      pos(C.bo, x, y, r);
+      pos(C.re, x, y, r);
+      pos(C.nu, x - r * .12, y + r * .1, r * .36);
+    }
+  }
+  frame(0);
+
+  Deck.on("i-celulas", {
+    enter: function (s) {
+      frame(0);
+      Deck.loop(s, function (t) { frame(t); });
+    }
+  });
+})();
+</script>
